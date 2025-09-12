@@ -1,0 +1,5 @@
+Artificial Intelligence (AI) is a branch of computer science that aims to create machines capable of intelligent behavior. It involves the development of algorithms that allow computers to perform tasks that typically require human intelligence, such as visual perception, speech recognition, decision-making, and language translation.
+
+Machine Learning (ML) is a subset of AI that focuses on the development of systems that can learn from and make decisions based on data. Instead of being explicitly programmed to perform a task, these systems use statistical techniques to improve their performance over time.
+
+Deep Learning is a further subset of machine learning that uses multi-layered neural networks to solve complex problems. These neural networks are inspired by the human brain and can learn from vast amounts of data.
