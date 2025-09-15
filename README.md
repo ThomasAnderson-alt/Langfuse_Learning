@@ -1,120 +1,152 @@
-# Langfuse Project: AI Tracing & RAG Examples
+# Langfuse Project: Advanced AI Tracing and Application Examples
 
-This repository demonstrates practical usage of the [Langfuse](https://langfuse.com/) tracing platform in Python AI applications, including chatbot tracing, dialogue follow-up, and Retrieval-Augmented Generation (RAG) with full observability. It features integration with Silicon Flow (OpenAI-compatible) APIs and Langfuse for monitoring, debugging, and quality assurance.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
+[![Langfuse](https://img.shields.io/badge/Langfuse-Observability-blue)](https://langfuse.com/)
+[![LangChain](https://img.shields.io/badge/LangChain-Integration-green)](https://www.langchain.com/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Workflow-orange)](https://github.com/langchain-ai/langgraph)
 
-## Table of Contents
+This repository provides a comprehensive collection of Python scripts demonstrating the practical application of the [Langfuse](https://langfuse.com/) tracing platform for building observable and robust AI systems. It includes examples of basic chatbot interaction, a sophisticated dialogue follow-up system, and a complete Retrieval-Augmented Generation (RAG) pipeline.
 
-- [Project Structure](#project-structure)
-- [File Summaries](#file-summaries)
-- [Setup & Requirements](#setup--requirements)
-- [Usage](#usage)
-- [Traces & Results](#traces--results)
-- [References](#references)
+The projects leverage the Silicon Flow API (for OpenAI-compatible models) and showcase deep integration with Langfuse for end-to-end monitoring, debugging, and performance analysis.
 
----
+## Key Features
+
+- **End-to-End Tracing:** Full observability into AI application workflows with Langfuse.
+- **Chatbot with Tracing:** A simple yet powerful example of tracing a chatbot conversation.
+- **Dialogue Follow-up System:** An advanced system using LangGraph to manage multi-turn dialogues with single and multiple-choice questions.
+- **Retrieval-Augmented Generation (RAG):** A complete RAG application built with LangChain, featuring document loading, embedding, and context-aware question-answering.
+- **Modular and Extensible:** Code is well-structured, making it easy to understand, modify, and extend for your own projects.
 
 ## Project Structure
 
-```
+```text
 Langfuse_Project/
-├── Basic_Tracing.py
-├── Basic_Tracing.md
-├── Basic_Tracing_Trace.json
-├── Dialogue_Followup_Langfuse.py
-├── Dialogue_Followup_Langfuse.md
-├── Dialogue_Followup_Langfuse_Single_Trace.json
-├── Dialogue_Followup_Langfuse_Multiple_Trace.json
-├── Langfuse_Project_Summarization.md
-├── PythonSDK.py
-├── PythonSDK.md
-├── PythonSDK_Trace.json
-├── RAG_Application.py
-├── RAG_Application.md
-├── RAG_Application_Trace.json
-├── data.txt
-├── images/
-│   ├── Observation_Results.png
-│   └── Trace_Results.png
+├── Basic_Tracing.py                # Simple chatbot with Langfuse tracing
+├── Basic_Tracing.md                # Documentation for Basic_Tracing.py
+├── Dialogue_Followup_Langfuse.py   # Dialogue system with LangGraph and Langfuse
+├── Dialogue_Followup_Langfuse.md   # Documentation for the dialogue system
+├── PythonSDK.py                    # Basic Langfuse Python SDK usage demo
+├── PythonSDK.md                    # Documentation for PythonSDK.py
+├── RAG_Application.py              # RAG pipeline with LangChain and Langfuse
+├── RAG_Application.md              # Documentation for the RAG application
+├── book.txt                        # Sample text document for the RAG application
+├── README.md                       # This file
+└── images/
+    ├── Observation_Results.png     # Screenshot of Langfuse observation results
+    └── Trace_Results.png           # Screenshot of Langfuse trace results
 ```
 
----
+## Getting Started
 
-## File Summaries
+### Prerequisites
 
-### 1. `Basic_Tracing.py` / `Basic_Tracing.md` / `Basic_Tracing_Trace.json`
+- Python 3.8 or higher
+- Git
 
-- **Purpose:** Minimal chatbot using Silicon Flow API and Langfuse for tracing. Logs user input, model response, and trace data for observability.
-- **Trace Example:** See `Basic_Tracing_Trace.json` for a sample trace of a user asking about South Africa's capitals.
+### Installation
 
-### 2. `Dialogue_Followup_Langfuse.py` / `Dialogue_Followup_Langfuse.md` / `Dialogue_Followup_Langfuse_Single_Trace.json` / `Dialogue_Followup_Langfuse_Multiple_Trace.json`
+1. **Clone the repository:**
 
-- **Purpose:** Dialogue follow-up system supporting single/multiple-choice questions, workflow orchestration with LangGraph, and full traceability with Langfuse.
-- **Trace Examples:**
-  - `Dialogue_Followup_Langfuse_Single_Trace.json`: Single-choice question trace.
-  - `Dialogue_Followup_Langfuse_Multiple_Trace.json`: Multiple-choice question trace.
+   ```sh
+   git clone https://github.com/ThomasAnderson-alt/Langfuse-Learning.git
+   cd Langfuse-Learning
+   ```
 
-### 3. `PythonSDK.py` / `PythonSDK.md` / `PythonSDK_Trace.json`
+2. **Create a virtual environment (recommended):**
 
-- **Purpose:** Demonstrates basic Langfuse Python SDK usage for creating and managing traces (observations) in AI applications.
-- **Trace Example:** See `PythonSDK_Trace.json` for a simple trace of a demo input/output.
+   ```sh
+   python -m venv venv
+   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+   ```
 
-### 4. `RAG_Application.py` / `RAG_Application.md` / `RAG_Application_Trace.json`
+3. **Install the required dependencies:**
 
-- **Purpose:** Complete Retrieval-Augmented Generation (RAG) pipeline using LangChain, with document loading, embedding, retrieval, and answer generation. All steps are traced with Langfuse.
-- **Trace Example:** See `RAG_Application_Trace.json` for a sample RAG pipeline trace.
+   ```sh
+   pip install openai langfuse langchain langgraph requests faiss-cpu
+   ```
 
-### 5. `data.txt`
+### Configuration
 
-- **Purpose:** Sample document for RAG application. Contains basic explanations of AI, Machine Learning, and Deep Learning.
+Before running the scripts, you need to set up your API keys. The scripts are designed to read these keys from environment variables.
 
-### 6. `images/`
+Create a `.env` file in the root of the project directory and add your keys as follows:
 
-- **Observation_Results.png:** Screenshot of Langfuse observation results.
-- **Trace_Results.png:** Screenshot of Langfuse trace results.
+```env
+SILICONFLOW_API_KEY="your-siliconflow-api-key"
+LANGFUSE_PUBLIC_KEY="your-langfuse-public-key"
+LANGFUSE_SECRET_KEY="your-langfuse-secret-key"
+LANGFUSE_HOST="https://cloud.langfuse.com"
+```
 
-### 7. `Langfuse_Project_Summarization.md`
+Alternatively, you can set them directly in your terminal session.
 
-- **Purpose:** High-level summary and documentation of all project scripts and their tracing logic.
+## How It Works
 
----
+This project is divided into four main examples, each demonstrating a different aspect of AI application development with Langfuse tracing.
 
-## Setup & Requirements
+### 1. Basic Tracing (`Basic_Tracing.py`)
 
-- Python 3.8+
-- Install dependencies:
+This script shows the simplest way to integrate Langfuse into a Python application. It captures a single user-AI interaction in a chatbot, creating a trace that includes the user's question, the AI's response, and metadata about the model used.
 
-  ```sh
-  pip install -r requirements.txt
-  # or install individually:
-  pip install langfuse openai langchain langgraph
-  ```
+### 2. Dialogue Follow-up System (`Dialogue_Followup_Langfuse.py`)
 
-- Set environment variables for Silicon Flow and Langfuse API keys (see code comments).
+A more advanced example that uses **LangGraph** to create a stateful, multi-step workflow for handling dialogue. The system can ask single-choice or multiple-choice questions and intelligently interpret natural language answers. Each step in the workflow (displaying the question, collecting input, processing with AI, showing results) is traced as a nested observation in Langfuse, providing a detailed view of the entire process.
+
+### 3. Langfuse Python SDK Demo (`PythonSDK.py`)
+
+This script serves as a minimal, "Hello World" example for the Langfuse Python SDK. It demonstrates the core concepts of creating a trace and updating it with input and output, providing a clear starting point for custom integrations.
+
+### 4. RAG Application (`RAG_Application.py`)
+
+This is a complete Retrieval-Augmented Generation (RAG) pipeline built with **LangChain**. It demonstrates how to:
+
+- Load and split text documents.
+- Create vector embeddings and store them in a FAISS vector store.
+- Retrieve relevant document chunks based on a user's question.
+- Generate a context-aware answer using an LLM.
+
+The entire pipeline is traced with Langfuse, offering deep insights into the performance of both the retrieval and generation steps.
 
 ## Usage
 
-- Run any script directly, e.g.:
+You can run each script individually from your terminal to see it in action. Make sure you have configured your environment variables as described in the **Configuration** section.
 
-  ```sh
-  python Basic_Tracing.py
-  python Dialogue_Followup_Langfuse.py
-  python PythonSDK.py
-  python RAG_Application.py
-  ```
+```sh
+# Run the basic chatbot
+python Basic_Tracing.py
 
-- Follow prompts in the console. Traces will be sent to your Langfuse dashboard.
+# Run the dialogue follow-up demo
+python Dialogue_Followup_Langfuse.py
 
-## Traces & Results
+# Run the simple SDK demo
+python PythonSDK.py
 
-- Example trace outputs are provided as `.json` files for each script.
-- Visual results can be found in the `images/` folder.
+# Run the RAG application
+python RAG_Application.py
+```
 
-## References
+After running a script, check your Langfuse dashboard to see the generated traces and observations.
 
-- [Langfuse Documentation](https://langfuse.com/docs)
-- [Silicon Flow API](https://api.siliconflow.cn/)
-- [LangChain](https://python.langchain.com/)
+## Traces and Results
 
----
+This repository includes screenshots of the Langfuse UI in the `images/` directory, showing what the traces and observations look like for these examples.
 
-_This repository is for educational and demonstration purposes. Replace API keys with your own for production use._
+- **`Trace_Results.png`**: Shows a high-level view of the traces generated by the different scripts.
+- **`Observation_Results.png`**: Provides a more detailed look at the nested observations within a single trace, such as the steps in the RAG or dialogue workflow.
+
+These images illustrate how Langfuse helps you visualize and understand the inner workings of your AI applications.
+
+## Contributing
+
+Contributions are welcome! If you have suggestions for improvements or want to add new examples, please feel free to open an issue or submit a pull request.
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/YourFeature`).
+3. Make your changes.
+4. Commit your changes (`git commit -m 'Add some feature'`).
+5. Push to the branch (`git push origin feature/YourFeature`).
+6. Open a pull request.
+
+## License
+
+This project is licensed under the MIT License.
