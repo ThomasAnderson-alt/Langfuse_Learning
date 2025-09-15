@@ -20,27 +20,27 @@ All examples use the [Langfuse](https://langfuse.com/) tracing platform and the 
 
 ```text
 Langfuse_Project/
-├── Basic_Tracing.py                # Simple chatbot with Langfuse tracing
-├── Basic_Tracing.md                # Documentation for Basic_Tracing.py
-├── Basic_Tracing_Trace.json        # Example trace output
-├── Dialogue_Followup_Langfuse.py   # Dialogue system with LangGraph and Langfuse
-├── Dialogue_Followup_Langfuse.md   # Documentation for the dialogue system
-├── Dialogue_Followup_Langfuse_Single_Trace.json   # Single-choice trace
-├── Dialogue_Followup_Langfuse_Multiple_Trace.json # Multiple-choice trace
-├── Langfuse_Project_Summarization.md # Project summary and comparison
-├── PythonSDK.py                    # Basic Langfuse Python SDK usage demo
-├── PythonSDK.md                    # Documentation for PythonSDK.py
-├── PythonSDK_Trace.json            # Example SDK trace output
-├── RAG_Application.py              # RAG pipeline with LangChain and Langfuse
-├── RAG_Application.md              # Documentation for the RAG application
-├── RAG_Application_Trace.json      # Example RAG trace output
-├── book.txt                        # Sample text document for RAG
-├── data.txt                        # Additional data for RAG
-├── LICENSE                         # MIT License
-├── README.md                       # This file
+├── Basic_Tracing.py                                  # Simple chatbot with Langfuse tracing
+├── Basic_Tracing.md                                  # Documentation for Basic_Tracing.py
+├── Basic_Tracing_Trace.json                          # Example trace output
+├── Dialogue_Followup_Langfuse.py                     # Dialogue system with LangGraph and Langfuse
+├── Dialogue_Followup_Langfuse.md                     # Documentation for the dialogue system
+├── Dialogue_Followup_Langfuse_Single_Trace.json      # Single-choice trace
+├── Dialogue_Followup_Langfuse_Multiple_Trace.json    # Multiple-choice trace
+├── Langfuse_Project_Summarization.md                 # Project summary and comparison
+├── PythonSDK.py                                      # Basic Langfuse Python SDK usage demo
+├── PythonSDK.md                                      # Documentation for PythonSDK.py
+├── PythonSDK_Trace.json                              # Example SDK trace output
+├── RAG_Application.py                                # RAG pipeline with LangChain and Langfuse
+├── RAG_Application.md                                # Documentation for the RAG application
+├── RAG_Application_Trace.json                        # Example RAG trace output
+├── book.txt                                          # Sample text document for RAG
+├── data.txt                                          # Additional data for RAG
+├── LICENSE                                           # MIT License
+├── README.md                                         # This file
 └── images/
-    ├── Observation_Results.png     # Screenshot of Langfuse observation results
-    └── Trace_Results.png           # Screenshot of Langfuse trace results
+    ├── Observation_Results.png                       # Screenshot of Langfuse observation results
+    └── Trace_Results.png                             # Screenshot of Langfuse trace results
 ```
 
 ---
