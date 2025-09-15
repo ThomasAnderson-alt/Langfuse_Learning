@@ -4,6 +4,13 @@
 
 This Python application implements an AI-powered dialogue follow-up system that can process both single-choice and multiple-choice questions. The system uses the Silicon Flow API for AI processing and integrates with Langfuse for comprehensive tracing and monitoring. The application is built using LangGraph for workflow orchestration.
 
+**Recent Update Highlights (September 2025):**
+
+- **Full Langfuse Tracing:** Every workflow node (`display_question`, `collect_input`, `process_api`, `display_result`) is now traced as a nested Langfuse observation using `start_as_current_observation`. The entire workflow is wrapped in a top-level Langfuse observation for a complete trace tree in the Langfuse UI.
+- **State Includes Trace:** The `DialogueState` now includes a `trace` object for traceability and context propagation.
+- **Prompt Instructions:** The API prompt is more explicit, instructing the AI to match user answers to options based on exact keywords and synonyms, not semantic similarity.
+- **Demo Improvements:** The demo function shows both single-choice and multiple-choice flows, and API keys are set as variables (should use environment variables in production).
+
 ## System Architecture
 
 The system is designed around a state-based workflow that processes user interactions through a series of defined nodes:
@@ -28,7 +35,7 @@ class DialogueState(TypedDict):
     trace: Any  # Add trace to state
 ```
 
-**Purpose**: This TypedDict defines the state structure that flows through the entire workflow. It maintains all necessary information about the current dialogue session including the question, available options, user responses, and API results.
+**Purpose**: This TypedDict defines the state structure that flows through the entire workflow. It maintains all necessary information about the current dialogue session including the question, available options, user responses, API results, and the current trace object for Langfuse observability.
 
 #### VoiceFollowUp Class
 
@@ -64,14 +71,14 @@ def __init__(self, api_key: str, langfuse_public_key: str, langfuse_secret_key: 
         public_key=langfuse_public_key,
         secret_key=langfuse_secret_key
 
-     Integrates Langfuse for complete observability
-     **Every workflow step is logged as a Langfuse observation:**
-     - **display_question**: Logs the question and options shown to the user.
-     - **collect_input**: Logs the user's input as an observation.
-     - **process_api**: Logs the API request and the parsed AI response.
-     - **display_result**: Logs the final result shown to the user.
+    Integrates Langfuse for complete observability
+    **Every workflow step is logged as a nested Langfuse observation:**
+    - **display_question**: Logs the question and options shown to the user as a child observation.
+    - **collect_input**: Logs the user's input as a child observation.
+    - **process_api**: Logs the API request and the parsed AI response as a child observation.
+    - **display_result**: Logs the final result shown to the user as a child observation.
 
-     Each of these steps is wrapped in a Langfuse observation using the Python SDK's `start_as_current_observation` context manager with `as_type="generation"`. This provides a detailed trace tree in the Langfuse UI, allowing you to monitor, debug, and analyze every part of the dialogue workflow.
+    The entire workflow is wrapped in a top-level Langfuse observation using the Python SDK's `start_as_current_observation` context manager with `as_type="generation"`. This provides a detailed trace tree in the Langfuse UI, allowing you to monitor, debug, and analyze every part of the dialogue workflow, including all nested steps.
 ```
 
 **What it does**:
@@ -127,11 +134,23 @@ def _build_workflow(self) -> Any:
 
 ```python
 def _display_question_node(self, state: DialogueState) -> DialogueState:
-    """Display question and options to user."""
-    print(f"\n{state['question_type'].title()}-Choice Question: {state['question']}")
-    print("Available Options:")
-    for option in state['options']:
-        print(f"  {option['opt_code']}. {option['opt_content']}")
+    """Display question and options to user, and log observation as a nested step."""
+    from langfuse import get_client
+    langfuse = get_client()
+    with langfuse.start_as_current_observation(
+        name="display_question",
+        as_type="generation",
+        model=self.model,
+        input={
+            "question": state["question"],
+            "options": state["options"],
+            "question_type": state["question_type"]
+        }
+    ):
+        print(f"\n{state['question_type'].title()}-Choice Question: {state['question']}")
+        print("Available Options:")
+        for option in state['options']:
+            print(f"  {option['opt_code']}. {option['opt_content']}")
     return state
 ```
 
@@ -140,15 +159,24 @@ def _display_question_node(self, state: DialogueState) -> DialogueState:
 1. Formats and displays the question type (Single/Multiple-Choice)
 2. Shows the main question text
 3. Lists all available options with their codes
-4. Returns the unchanged state to continue the workflow
+4. Logs the display as a nested Langfuse observation
+5. Returns the unchanged state to continue the workflow
 
 ### Step 4: Input Collection Node
 
 ```python
 def _collect_input_node(self, state: DialogueState) -> DialogueState:
-    """Collect user input for the question."""
-    user_input = input("\nPlease enter your answer: ").strip()
-    state["user_answer"] = user_input
+    """Collect user input for the question and log observation as a nested step."""
+    from langfuse import get_client
+    langfuse = get_client()
+    with langfuse.start_as_current_observation(
+        name="collect_input",
+        as_type="generation",
+        model=self.model
+    ) as obs:
+        user_input = input("\nPlease enter your answer: ").strip()
+        state["user_answer"] = user_input
+        obs.update(output={"user_answer": user_input})
     return state
 ```
 
@@ -157,41 +185,54 @@ def _collect_input_node(self, state: DialogueState) -> DialogueState:
 1. Prompts the user for their response
 2. Collects and cleans the input (removes whitespace)
 3. Updates the state with the user's answer
-4. Passes the updated state to the next node
+4. Logs the input as a nested Langfuse observation
+5. Passes the updated state to the next node
 
 ### Step 5: API Processing Node
 
 ```python
 def _process_api_node(self, state: DialogueState) -> DialogueState:
-    """Process user answer via AI API."""
-    print("Processing your answer...")
-
-    # Make API request
-    response = requests.post(
-        self.api_endpoint,
-        headers={
-            "Content-Type": "application/json; charset=utf-8",
-            "Authorization": f"Bearer {self.api_key}"
-        },
-        json=self._build_api_payload(
-            state["question"],
-            state["options"],
-            state["user_answer"],
-            state["question_type"]
-        ),
-        timeout=API_TIMEOUT
-    )
-    response.raise_for_status()
-
-    api_result = response.json()
-    parsed_data = json.loads(api_result['choices'][0]['message']['content'])
-
-    # Update state
-    state.update({
-        "api_response": api_result,
-        "parsed_result": parsed_data
-    })
-
+    """Process user answer via AI API and log observation as a nested step."""
+    from langfuse import get_client
+    langfuse = get_client()
+    with langfuse.start_as_current_observation(
+        name="process_api",
+        as_type="generation",
+        model=self.model,
+        input={
+            "question": state["question"],
+            "options": state["options"],
+            "user_answer": state["user_answer"],
+            "question_type": state["question_type"]
+        }
+    ) as obs:
+        print("Processing your answer...")
+        response = requests.post(
+            self.api_endpoint,
+            headers={
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": f"Bearer {self.api_key}"
+            },
+            json=self._build_api_payload(
+                state["question"],
+                state["options"],
+                state["user_answer"],
+                state["question_type"]
+            ),
+            timeout=API_TIMEOUT
+        )
+        response.raise_for_status()
+        api_result = response.json()
+        parsed_data = json.loads(api_result['choices'][0]['message']['content'])
+        obs.update(output={
+            "api_response": api_result,
+            "parsed_result": parsed_data
+        })
+        # Update state
+        state.update({
+            "api_response": api_result,
+            "parsed_result": parsed_data
+        })
     return state
 ```
 
@@ -202,6 +243,7 @@ def _process_api_node(self, state: DialogueState) -> DialogueState:
 3. Handles the response and extracts the AI's analysis
 4. Parses the JSON response from the AI
 5. Updates the state with both raw API response and parsed results
+6. Logs the API call and result as a nested Langfuse observation
 
 ### Step 6: API Payload Construction
 
@@ -213,6 +255,13 @@ def _build_api_payload(self, question: str, options: List[Dict[str, str]], answe
     system_prompt = f"""You are an expert at matching user answers to predefined options.
 Given a {question_type}-choice question and the user's natural language answer, identify which option(s) best matches the user's response.
 
+CRITICAL MATCHING RULES:
+1. Match based on EXACT keywords and synonyms, not semantic similarity
+2. "runny nose" should match "Runny nose" NOT "Sneezing"
+3. "tired" or "fatigue" should match "General weakness"
+4. Only select options that have clear keyword/synonym matches in the user's text
+5. Be precise - don't assume related symptoms are the same
+
 Return your response as a JSON object with this structure:
 {{"option_code": "1", "option_content": "Option text"}}
 
@@ -223,7 +272,13 @@ Available options:
 {options_str}
 User's answer: "{answer}"
 
-Please match the user's answer to the most appropriate option(s) and return the result in JSON format."""
+Analyze the user's answer and match it to the most appropriate option(s) based on exact keyword matches:
+- Look for direct keyword matches (e.g., "headache" matches "Headache")
+- Consider common synonyms (e.g., "tired" matches "General weakness")
+- Do NOT match based on medical similarity (e.g., "runny nose" is not "Sneezing")
+- Only select options that have clear textual evidence in the user's response
+
+Return the result in JSON format."""
 
     return {
         "model": self.model,
@@ -239,7 +294,7 @@ Please match the user's answer to the most appropriate option(s) and return the 
 **What it does**:
 
 1. Formats all available options into a readable string
-2. Creates a detailed system prompt that instructs the AI on its role
+2. Creates a detailed system prompt that instructs the AI on its role and provides explicit matching rules (exact keywords, synonyms, not semantic similarity)
 3. Builds a user prompt with the question, options, and user's natural language answer
 4. Structures the complete API payload with model parameters
 5. Sets temperature to 0.0 for consistent, deterministic responses
@@ -248,11 +303,19 @@ Please match the user's answer to the most appropriate option(s) and return the 
 
 ```python
 def _display_result_node(self, state: DialogueState) -> DialogueState:
-    """Display the API processing results."""
+    """Display the API processing results and log observation as a nested step."""
+    from langfuse import get_client
+    langfuse = get_client()
     data = state["parsed_result"]
-    print(f"\n{'='*30} RESULTS {'='*30}")
-    print(f"Best Match Found!")
-    print(f"Option: {data.get('option_code', 'N/A')} - {data.get('option_content', 'N/A')}")
+    with langfuse.start_as_current_observation(
+        name="display_result",
+        as_type="generation",
+        model=self.model,
+        input=data
+    ):
+        print(f"\n{'='*30} RESULTS {'='*30}")
+        print(f"Best Match Found!")
+        print(f"Option: {data.get('option_code', 'N/A')} - {data.get('option_content', 'N/A')}")
     return state
 ```
 
@@ -262,30 +325,46 @@ def _display_result_node(self, state: DialogueState) -> DialogueState:
 2. Formats and displays the AI's analysis
 3. Shows the matched option code and content
 4. Uses safe dictionary access to handle missing data
+5. Logs the result display as a nested Langfuse observation
 
 ### Step 8: Question Processing Interface
 
 ```python
 def process_question(self, question: str, options: List[Dict[str, str]], question_type: str) -> Dict[str, Any]:
-    """Process a question through the workflow."""
-    initial_state = DialogueState(
-        question=question,
-        options=options,
-        question_type=question_type,
-        user_answer="",
-        api_response={},
-        parsed_result={},
-        trace=None
-    )
-    return self.workflow.invoke(initial_state)
+    """Process a question through the workflow with Langfuse tracing using the correct SDK pattern."""
+    from langfuse import get_client
+    langfuse = get_client()
+    with langfuse.start_as_current_observation(
+        name="Dialogue Followup",
+        as_type="generation",
+        input={
+            "question": question,
+            "options": options,
+            "question_type": question_type
+        }
+    ) as trace:
+        initial_state = DialogueState(
+            question=question,
+            options=options,
+            question_type=question_type,
+            user_answer="",
+            api_response={},
+            parsed_result={},
+            trace=trace
+        )
+        result = self.workflow.invoke(initial_state)
+        # Log output at the end of the workflow
+        trace.update(output=result)
+    return result
 ```
 
 **What it does**:
 
 1. Creates an initial state with the provided question parameters
 2. Initializes empty fields for user responses and API results
-3. Invokes the complete workflow with the initial state
-4. Returns the final processed state
+3. Wraps the entire workflow in a top-level Langfuse observation for full traceability
+4. Invokes the complete workflow with the initial state
+5. Returns the final processed state
 
 ## Demo Implementation
 
@@ -308,6 +387,7 @@ def run_demo():
 1. Sets up API credentials (should use environment variables in production)
 2. Creates an instance of the VoiceFollowUp system
 3. Demonstrates both single-choice and multiple-choice question processing
+4. At the end, flushes all Langfuse traces
 
 ### Example Question Processing
 
@@ -396,5 +476,13 @@ These constants provide:
 4. **Scalable**: Easy to add new question types or modify workflow steps
 5. **Robust**: Proper error handling and timeout protection
 6. **Maintainable**: Clear separation of concerns and well-documented code
+
+## Tracing and Observability
+
+With the latest update, every step of the workflow is visible in the Langfuse UI as a nested trace tree. This enables:
+
+- Fine-grained debugging of each workflow node
+- Performance monitoring for each step
+- End-to-end traceability from user input to AI response and result display
 
 This system effectively bridges the gap between natural human communication and structured data collection, making it ideal for surveys, medical questionnaires, customer feedback, and other applications requiring intelligent response processing.

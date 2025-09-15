@@ -14,7 +14,6 @@ The goal is to build an intelligent document-based question-answering system tha
 
 ```python
 import os
-import requests
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
@@ -27,14 +26,13 @@ from langfuse.langchain import CallbackHandler
 - Core LangChain components for RAG pipeline
 - Document processing and vector storage libraries
 - Langfuse integration for tracing
-- HTTP requests for API testing
 
 ### 2. Configuration Settings
 
 ```python
-DOCUMENT_FILE = "data.txt"
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 200
+DOCUMENT_FILE = "book.txt"
+CHUNK_SIZE = 2000
+CHUNK_OVERLAP = 500
 LLM_MODEL = "inclusionAI/Ling-mini-2.0"
 EMBEDDING_MODEL = "Qwen/Qwen3-Embedding-4B"
 TEMPERATURE = 0.0
@@ -76,43 +74,29 @@ def setup_environment():
 
 ```python
 def load_and_process_documents(file_path: str):
+    # Load documents from file and split into chunks.
+    # Validate file exists
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Document file not found: {file_path}")
-
-    loader = TextLoader(file_path)
-    documents = loader.load()
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP
-    )
-    document_chunks = text_splitter.split_documents(documents)
-
-    return document_chunks
+    try:
+        loader = TextLoader(file_path)
+        documents = loader.load()
+        if not documents:
+            raise ValueError(f"No content found in {file_path}")
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP
+        )
+        document_chunks = text_splitter.split_documents(documents)
+        return document_chunks
+    except Exception as e:
+        print(f"Error processing documents: {e}")
+        raise
 ```
 
 - Validates document file existence
 - Loads text documents using LangChain's TextLoader
 - Splits documents into overlapping chunks for better retrieval
-
-### 6. API Connection Testing
-
-```python
-def test_api_connection():
-    try:
-        response = requests.get(
-            f"{SILICONFLOW_BASE_URL}/models",
-            headers={"Authorization": f"Bearer {SILICONFLOW_API_KEY}"},
-        )
-        return response.status_code == 200
-    except Exception as e:
-        print(f"API connection test failed: {e}")
-        return False
-```
-
-- Verifies API connectivity before processing
-- Tests authentication and network connectivity
-- Provides early error detection
 
 ### 7. Vector Store Creation
 
@@ -176,14 +160,16 @@ def display_results(result):
 
 ```python
 def main():
+    # Orchestrate RAG pipeline execution.
     print("Starting RAG Application with Langfuse Tracing")
-
+    print("="*60)
     try:
+        # Setup environment and APIs
         setup_environment()
-
+        # Initialize Langfuse tracing
         langfuse_handler = CallbackHandler()
         langfuse_client = get_client()
-
+        # Start main trace with session_id
         with langfuse_client.start_as_current_observation(
             name="Langchain-Application",
             as_type='generation',
@@ -191,29 +177,32 @@ def main():
             model_parameters={"temperature": str(TEMPERATURE)}
         ) as generation:
             generation.update_trace(user_id=USER_ID, session_id=SESSION_ID)
-
-            # Document processing pipeline
-            document_chunks = load_and_process_documents(DOCUMENT_FILE)
-            vector_store = create_vector_store(document_chunks)
-            qa_chain = create_qa_chain(vector_store)
-
-            # Question answering
-            question = get_user_question()
-            generation.update_trace(input={"question": question})
-
-            result = qa_chain.invoke(
-                {"query": question},
-                config={"callbacks": [langfuse_handler]}
-            )
-
-            generation.update_trace(output={"answer": result["result"]})
-            display_results(result)
-
-    except Exception as error:
-        print(f"\nError occurred: {error}")
-        generation.update_trace(output={"error": str(error)})
-
+            try:
+                # Document Processing Pipeline
+                document_chunks = load_and_process_documents(DOCUMENT_FILE)
+                vector_store = create_vector_store(document_chunks)
+                qa_chain = create_qa_chain(vector_store)
+                # Question Answering
+                print("\nReady for questions!")
+                question = get_user_question()
+                if not question:
+                    print("No question provided. Exiting...")
+                    return
+                # Update trace with input
+                generation.update_trace(input={"question": question})
+                result = qa_chain.invoke(
+                    {"query": question},
+                    config={"callbacks": [langfuse_handler]}
+                )
+                # Update trace with output
+                generation.update_trace(output={"answer": result["result"]})
+                # Display results
+                display_results(result)
+                print("\nProcessing complete! Check Langfuse for detailed traces.")
+            except Exception as e:
+                print(f"An error occurred during processing: {e}")
     finally:
+        # Ensure all traces are sent to Langfuse
         try:
             get_client().flush()
             print("\nTraces sent to Langfuse dashboard")

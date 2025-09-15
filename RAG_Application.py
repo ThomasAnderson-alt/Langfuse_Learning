@@ -5,7 +5,6 @@ RAG Application with Langfuse Tracing
 # Imports
 
 import os
-import requests
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
@@ -17,9 +16,9 @@ from langfuse.langchain import CallbackHandler
 # Configuration
 
 # Document Processing Settings
-DOCUMENT_FILE = "data.txt"
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 200
+DOCUMENT_FILE = "book.txt"
+CHUNK_SIZE = 2000
+CHUNK_OVERLAP = 500
 
 # RAG Settings
 LLM_MODEL = "inclusionAI/Ling-mini-2.0"
@@ -81,19 +80,6 @@ def load_and_process_documents(file_path: str):
     except Exception as e:
         print(f"Error processing documents: {e}")
         raise
-
-def test_api_connection():
-    # Test API connection to SiliconFlow.
-    try:
-        response = requests.get(
-            f"{SILICONFLOW_BASE_URL}/models",
-            headers={"Authorization": f"Bearer {SILICONFLOW_API_KEY}"},
-        )
-        timeout = 10
-        return response.status_code == 200
-    except Exception as e:
-        print(f"API connection test failed: {e}")
-        return False
 
 def create_vector_store(document_chunks):
     # Create FAISS vector store from document chunks.
@@ -193,24 +179,14 @@ def main():
                 )
 
                 # Update trace with output
-                generation.update_trace(output={
-                    "answer": result["result"]
-                })
+                generation.update_trace(output={"answer": result["result"]})
 
                 # Display results
                 display_results(result)
 
                 print("\nProcessing complete! Check Langfuse for detailed traces.")
-
-            except Exception as error:
-                print(f"\nError occurred: {error}")
-                # Update trace with error
-                generation.update_trace(output={"error": str(error)})
-                # Error is automatically captured by Langfuse handler
-
-    except Exception as error:
-        print(f"\nCritical error: {error}")
-        
+            except Exception as e:
+                print(f"An error occurred during processing: {e}")
     finally:
         # Ensure all traces are sent to Langfuse
         try:

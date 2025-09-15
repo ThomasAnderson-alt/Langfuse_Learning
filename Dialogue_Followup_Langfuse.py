@@ -9,6 +9,7 @@ from typing import Any, Dict, List, TypedDict
 import requests
 from langgraph.graph import StateGraph, END
 from langfuse import Langfuse
+from langfuse import get_client
 
 # Configure logging
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -79,7 +80,6 @@ class VoiceFollowUp:
 
     def _display_question_node(self, state: DialogueState) -> DialogueState:
         """Display question and options to user, and log observation as a nested step."""
-        from langfuse import get_client
         langfuse = get_client()
         with langfuse.start_as_current_observation(
             name="display_question",
@@ -99,7 +99,6 @@ class VoiceFollowUp:
 
     def _collect_input_node(self, state: DialogueState) -> DialogueState:
         """Collect user input for the question and log observation as a nested step."""
-        from langfuse import get_client
         langfuse = get_client()
         with langfuse.start_as_current_observation(
             name="collect_input",
@@ -113,7 +112,6 @@ class VoiceFollowUp:
 
     def _process_api_node(self, state: DialogueState) -> DialogueState:
         """Process user answer via AI API and log observation as a nested step."""
-        from langfuse import get_client
         langfuse = get_client()
         with langfuse.start_as_current_observation(
             name="process_api",
@@ -157,7 +155,6 @@ class VoiceFollowUp:
 
     def _display_result_node(self, state: DialogueState) -> DialogueState:
         """Display the API processing results and log observation as a nested step."""
-        from langfuse import get_client
         langfuse = get_client()
         data = state["parsed_result"]
         with langfuse.start_as_current_observation(
@@ -215,7 +212,6 @@ Return the result in JSON format."""
 
     def process_question(self, question: str, options: List[Dict[str, str]], question_type: str) -> Dict[str, Any]:
         """Process a question through the workflow with Langfuse tracing using the correct SDK pattern."""
-        from langfuse import get_client
         langfuse = get_client()
         with langfuse.start_as_current_observation(
             name="Dialogue Followup",
